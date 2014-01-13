@@ -23,7 +23,7 @@
 AC_INIT([auv-navigation], [0.1], [yeiniel@uclv.cu])
 
 # Chequeo de seguridad para que Autoconf encuentre el directorio del proyecto.
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([src/auv-navigation.c])
 
 # Indica que se emplee las herramientas auxiliares (ejemplo: install-sh,
 # config.sub, config.guess, etc.) que se localizan en el directorio ./build-aux
@@ -54,6 +54,15 @@ AC_PROG_CC_C99
 AC_PROG_LIBTOOL
 
 LT_INIT
+
+# la libreria rt(real time) es una extension de POSIX necesaria para
+# poder compilar timer.c
+AC_CHECK_LIB([rt], [timer_create],, 
+	AC_MSG_ERROR([Error: librt no esta disponible en esta plataforma.]))
+
+# Prueba si la librería "daemon" está disponible.
+AC_CHECK_LIB([m], [sin],,
+	AC_MSG_WARN([Warning: math no esta disponible en esta plataforma.]))
 
 # Prueba si la librería "daemon" está disponible.
 AC_CHECK_LIB([daemon], [daemon_pid_file_kill_wait],,
