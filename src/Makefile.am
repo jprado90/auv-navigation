@@ -28,9 +28,15 @@ AM_CPPFLAGS += -DCONFIG_PATH="\"$(sysconfdir)/\""
 AM_CPPFLAGS += -I$(top_srcdir)/vendors/mt/include
 AM_CPPFLAGS += -I$(top_srcdir)/vendors/garpnet/include
 
-bin_PROGRAMS = auv-navigation
+bin_PROGRAMS = auv-navigation mti-g-simulator x-acc-viewer
 
 auv_navigation_SOURCES = auv-navigation.c
-auv_navigation_LDADD = $(top_builddir)/lib/auv-navigation.la
+auv_navigation_LDADD = $(top_builddir)/lib/libauv-navigation.la
 auv_navigation_LDADD += $(top_builddir)/vendors/mt/lib/libgarpmt.la
 auv_navigation_LDADD += $(top_builddir)/vendors/garpnet/lib/libgarpnet.la
+
+mti_g_simulator_SOURCES = mti-g-simulator.c
+mti_g_simulator_LDADD = $(top_builddir)/vendors/mt/lib/libgarpmt.la
+
+x_acc_viewer_SOURCES = x-acc-viewer.c
+x_acc_viewer_LDADD = $(top_builddir)/vendors/garpnet/lib/libgarpnet.la
