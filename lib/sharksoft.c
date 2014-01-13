@@ -47,7 +47,7 @@ void sharksoft_init(struct sharksoft * sharksoft, config_setting_t * config,
 	sharksoft->gps_ptr = gps_ptr;
 }
 
-void sharksoft_handle_getdata(struct sharksoft * sharksoft)
+void _sharksoft_handle_getdata(struct sharksoft * sharksoft)
 {
 	unsigned char * buffer = sharksoft->content;
 
@@ -90,7 +90,7 @@ void sharksoft_handle_getdata(struct sharksoft * sharksoft)
 	sharksoft->message.type = SHARKSOFT_SETDATA;
 	sharksoft->message.length = buffer - sharksoft->content;
 
-	/* TODO Comprobar que la operacion no fallo */
+	/* TODO Comprobar que la operacion no falló */
 	garpnet_tx(sharksoft->fd, 0, &(sharksoft->message));
 }
 
@@ -102,13 +102,13 @@ void sharksoft_handle_request(struct sharksoft * sharksoft)
 		switch(msg_ptr->type){
 		case SHARKSOFT_GETDATA:
 			/* Sharksoft HMI data request */
-			sharksoft_handle_getdata(sharksoft);
+			_sharksoft_handle_getdata(sharksoft);
 			break;
 		default:
 			sharksoft->message.type = SHARKSOFT_ACK;
 			sharksoft->message.length = 0;
 
-			/* TODO Comprobar que la operacion no fallo */
+			/* TODO Comprobar que la operacion no falló */
 			garpnet_tx(sharksoft->fd, 0, &(sharksoft->message));
 		}
 	}
