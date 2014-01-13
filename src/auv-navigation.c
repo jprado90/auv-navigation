@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place – Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <assert.h>
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
@@ -36,6 +37,7 @@
 
 #include "garp/rtdb.h"
 #include "garp/mti-g.h"
+#include "garp/sharksoft.h"
 
 #include "garp/time-tracker.h"
 
@@ -43,9 +45,11 @@
  * se lo pasa al compilador el Makefile de este directorio. Esto permite
  * conocer el directorio de ficheros de configuración en tiempo de
  * compilación. */
-#ifndef CONFIG_FILE
-const char * CONFIG_FILE = "/etc/auv-navigation.cfg";
+#ifndef CONFIG_PATH
+const char * CONFIG_PATH = "/etc/";
 #endif
+
+const char * CONFIG_FILE = "auv-navigation.cfg";
 
 /** Punto de entrada de la aplicacion de navegacion.
  * @return Estado de la aplicacion al terminar.
@@ -122,6 +126,8 @@ int main(int argc, char *argv[]) {
 		int fd, quit = 0;
 		fd_set fds;
 
+		char * config_file;
+
 		config_t cfg;
 		config_setting_t *setting;
 
@@ -132,6 +138,8 @@ int main(int argc, char *argv[]) {
 		struct mti_g mti_g;
 
 		struct time_tracker tracker;
+
+		struct sharksoft sharksoft;
 
 		/* Close FDs */
 		if (daemon_close_all(-1) < 0) {
@@ -166,11 +174,16 @@ int main(int argc, char *argv[]) {
 		/* cargar la configuración de la aplicación */
 		config_init(&cfg);
 
+		config_file = malloc(strlen(CONFIG_PATH) + strlen(CONFIG_FILE) + 1);
+		assert(config_file != NULL);
+		strcpy(config_file, CONFIG_PATH);
+		strcpy(config_file + strlen(CONFIG_PATH), CONFIG_FILE);
+
+
 		/* Read the file. If there is an error, report it and exit. */
-		if(!config_read_file(&cfg, CONFIG_FILE))
-		{
+		if (!config_read_file(&cfg, CONFIG_FILE)) {
 			daemon_log(LOG_ERR, "%s:%d - %s\n", config_error_file(&cfg),
-				config_error_line(&cfg), config_error_text(&cfg));
+					config_error_line(&cfg), config_error_text(&cfg));
 			daemon_retval_send(4);
 			goto finish;
 		}
@@ -180,16 +193,19 @@ int main(int argc, char *argv[]) {
 		/* Inicializar el controlador de estado de la MTi-G, enlazando
 		 * la RTDB como area de almacenamiento */
 		setting = config_lookup(&cfg, "mti_g");
-		daemon_log(LOG_INFO, "MTi-G state controller config found");
 		mti_g_init(&mti_g, setting, &(rtdb.imu), &(rtdb.gps));
 
 		daemon_log(LOG_INFO, "MTi-G state controller inited");
 
 		setting = config_lookup(&cfg, "time_tracker");
-		daemon_log(LOG_INFO, "Time Tracker service config found");
 		time_tracker_init(&tracker, setting);
 
 		daemon_log(LOG_INFO, "Time Tracker service inited");
+
+		setting = config_lookup(&cfg, "sharksoft");
+		sharksoft_init(&sharksoft, setting, &(rtdb.imu), &(rtdb.gps));
+
+		daemon_log(LOG_INFO, "Sharksoft data provider service inited");
 
 		/* Send OK to parent process */
 		daemon_retval_send(0);
@@ -202,6 +218,7 @@ int main(int argc, char *argv[]) {
 		FD_SET(fd, &fds);
 
 		FD_SET(mti_g.fd, &fds);
+		FD_SET(sharksoft.fd, &fds);
 
 		while (!quit) {
 			fd_set fds2 = fds;
@@ -248,7 +265,17 @@ int main(int argc, char *argv[]) {
 			/* Procesar señales desde la MTi-G */
 			if (FD_ISSET(mti_g.fd, &fds2)) {
 				mti_g_handle_request(&mti_g);
-				time_tracker_handle(&tracker);
+
+				//sharksoft_handle_getdata(&sharksoft);
+
+				//time_tracker_handle(&tracker);
+			}
+
+			/* Procesar señales desde el HMI Sharksoft */
+			if (FD_ISSET(sharksoft.fd, &fds2)) {
+				//time_tracker_handle(&tracker);
+				sharksoft_handle_request(&sharksoft);
+
 			}
 		}
 

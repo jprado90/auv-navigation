@@ -16,10 +16,24 @@
 ## Foundation, Inc., 59 Temple Place – Suite 330, Boston, MA 02111-1307, USA.
 ###############################################################################
 
-SUBDIRS = vendors/mt vendors/garpnet etc include lib src doc
+# Opciones para el compilador del lenguaje C (apegarse al estándard C99,
+# mostrar todas las alertas y compilar con facilidades para el eliminador de
+# fallas)
+AM_CFLAGS = -std=c99 -Wall -Werror
 
-# "ACLOCAL_AMFLAGS = -I m4" tambien debe ser establecido en el fichero 
-# Makefile.am en el directorio raiz del proyecto porque este proyecto emplea
-# la herramienta aclocal del sistema Automake para generar el fichero 
-# aclocal.m4
-ACLOCAL_AMFLAGS = -I m4
+# Opciones para el pre-procesador del compilador del lenguaje C
+AM_CPPFLAGS = -I$(top_srcdir)/include 
+
+AM_CPPFLAGS += -I$(top_srcdir)/vendors/mt/include
+AM_CPPFLAGS += -I$(top_srcdir)/vendors/garpnet/include
+
+# Lista de productos de tipo librería que se producen en este directorio pero
+# que no se van a instalar en el sistema una vez que se invoque la herramienta 
+# make con el argumento install.
+noinst_LTLIBRARIES = auv-navigation.la
+
+auv_navigation_la_SOURCES = mti-g.c
+auv_navigation_la_SOURCES += time-tracker.c
+auv_navigation_la_SOURCES += sharksoft.c
+auv_navigation_la_LDADD = $(top_builddir)/vendors/mt/lib/libgarpmt.la
+auv_navigation_la_LDADD += $(top_builddir)/vendors/garpnet/lib/libgarpnet.la
