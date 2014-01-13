@@ -22,6 +22,8 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/unistd.h>
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
 		return ret;
 
 	} else { /* The daemon */
-		int fd, quit = 0;
+		int fd, top_fd = 0, quit = 0;
 		fd_set fds;
 
 		char * config_file;
@@ -181,7 +183,7 @@ int main(int argc, char *argv[]) {
 
 
 		/* Read the file. If there is an error, report it and exit. */
-		if (!config_read_file(&cfg, CONFIG_FILE)) {
+		if (!config_read_file(&cfg, config_file)) {
 			daemon_log(LOG_ERR, "%s:%d - %s\n", config_error_file(&cfg),
 					config_error_line(&cfg), config_error_text(&cfg));
 			daemon_retval_send(4);
@@ -214,17 +216,23 @@ int main(int argc, char *argv[]) {
 
 		/* Prepare for select() on the signals */
 		FD_ZERO(&fds);
+
 		fd = daemon_signal_fd();
+		if(fd >= top_fd) top_fd = fd + 1;
+
 		FD_SET(fd, &fds);
 
 		FD_SET(mti_g.fd, &fds);
+		if(mti_g.fd >= top_fd) top_fd = mti_g.fd + 1;
+
 		FD_SET(sharksoft.fd, &fds);
+		if(sharksoft.fd >= top_fd) top_fd = sharksoft.fd + 1;
 
 		while (!quit) {
 			fd_set fds2 = fds;
 
 			/* Wait for an incoming signal */
-			if (select(FD_SETSIZE, &fds2, 0, 0, 0) < 0) {
+			if (select(top_fd, &fds2, 0, 0, 0) < 0) {
 
 				/* If we've been interrupted by an incoming signal, continue */
 				if (errno == EINTR)
@@ -264,15 +272,13 @@ int main(int argc, char *argv[]) {
 
 			/* Procesar señales desde la MTi-G */
 			if (FD_ISSET(mti_g.fd, &fds2)) {
+				time_tracker_handle(&tracker);
 				mti_g_handle_request(&mti_g);
-
-				//sharksoft_handle_getdata(&sharksoft);
-
-				//time_tracker_handle(&tracker);
 			}
 
 			/* Procesar señales desde el HMI Sharksoft */
 			if (FD_ISSET(sharksoft.fd, &fds2)) {
+				daemon_log(LOG_INFO, "Got a Sharksoft request");
 				//time_tracker_handle(&tracker);
 				sharksoft_handle_request(&sharksoft);
 
