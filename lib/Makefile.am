@@ -30,10 +30,10 @@ AM_CPPFLAGS += -I$(top_srcdir)/vendors/garpnet/include
 # Lista de productos de tipo librería que se producen en este directorio pero
 # que no se van a instalar en el sistema una vez que se invoque la herramienta 
 # make con el argumento install.
-noinst_LTLIBRARIES = auv-navigation.la
+noinst_LTLIBRARIES = libauv-navigation.la
 
-auv_navigation_la_SOURCES = mti-g.c
-auv_navigation_la_SOURCES += time-tracker.c
-auv_navigation_la_SOURCES += sharksoft.c
-auv_navigation_la_LDADD = $(top_builddir)/vendors/mt/lib/libgarpmt.la
-auv_navigation_la_LDADD += $(top_builddir)/vendors/garpnet/lib/libgarpnet.la
+libauv_navigation_la_SOURCES = mti-g.c
+libauv_navigation_la_SOURCES += time-tracker.c
+libauv_navigation_la_SOURCES += sharksoft.c
+libauv_navigation_la_LIBADD = $(top_builddir)/vendors/mt/lib/libgarpmt.la
+libauv_navigation_la_LIBADD += $(top_builddir)/vendors/garpnet/lib/libgarpnet.la
