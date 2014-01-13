@@ -18,25 +18,24 @@
  * Foundation, Inc., 59 Temple Place – Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#define _POSIX_C_SOURCE 199506L
+
 #include <time.h>
+#include <string.h>
+#include <math.h>
 
 #include <fcntl.h>
 #include <sys/time.h>
 
 #include "garp/mt.h"
 
-long int _timespec2milisecond(struct timespec * timespec)
-{
-	return (timespec->tv_nsec / 1000000) + (timespec->tv_sec * 1000);
-}
-
 int main(int argc, char *argv[]) {
-	int fd;
+	int fd, angle = 0, increase = 1;
 	struct mt_message message;
-	unsigned char content[260];
+	float content[65];
 	struct timespec init, end;
 
-	message.content = content;
+	message.content = (unsigned char *)content;
 
 	memset(content, 0, 260);
 	message.type = 0x32;
@@ -46,12 +45,21 @@ int main(int argc, char *argv[]) {
 
 	while(1){
 		clock_gettime(CLOCK_REALTIME, &init);
+
+		content[0] = sin(3.1416 * angle / 180);
+		if(angle == 360) angle = 0;
+		else angle = angle + increase;
+
 		mt_send(fd, 0xff, &message);
 		clock_gettime(CLOCK_REALTIME, &end);
 
 		/* teniendo fe en que esto demorará menos de un segundo */
+		end.tv_sec = 0;
 		end.tv_nsec -= init.tv_nsec;
+		end.tv_nsec = 10000000 - end.tv_nsec;
 
 		nanosleep(&end, NULL);
 	}
+
+	return 0;
 }
